@@ -1,0 +1,129 @@
+#!/bin/sh
+
+# Setting global variable
+CONFIG_LOCALVERSION="-.::NGKxUN::4.5.0::."
+KSU="y"
+
+# checking requirement
+if ! command -v docker &> /dev/null; then echo "Please install docker first";  exit 1; fi
+if [ "$(docker images -f reference=ubuntu:build-20 | grep ubuntu | cut -d" " -f1)" != "ubuntu" ]; then echo "Please build image docker from Dockerfile with tag ubuntu:build-20"; exit 1; fi;
+
+
+if [ ! -d "$(pwd)/ngk" ]; then
+  git clone https://github.com/Pierre2324/NGK_android_kernel_xiaomi_sdm845.git --depth=1 -b t-caf-latest ngk
+else
+  cd ngk && git pull --rebase --autostash --no-verify && cd ..
+fi
+
+# setting DefConfig
+sed -i '45c\CONFIG_LOCALVERSION="-.::NGKxUN::4.5.0::."' ngk/arch/arm64/configs/nogravity_defconfig
+grep -i "CONFIG_KSU=" ngk/arch/arm64/configs/nogravity_defconfig || sed -i '$ a\CONFIG_KSU=y' ngk/arch/arm64/configs/nogravity_defconfig
+grep -i "CONFIG_KPROBES=" ngk/arch/arm64/configs/nogravity_defconfig || sed -i '$ a\CONFIG_KPROBES=y' ngk/arch/arm64/configs/nogravity_defconfig
+sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/CONFIG_CC_STACKPROTECTOR_STRONG=n/g' ngk/arch/arm64/configs/nogravity_defconfig
+
+if [ "$KSU" = "y" ] || [ "$KSU" = "Y" ]; then
+    sed -i 's/CONFIG_KSU=n/CONFIG_KSU=y/g' ngk/arch/arm64/configs/nogravity_defconfig
+    sed -i 's/CONFIG_KSU=N/CONFIG_KSU=y/g' ngk/arch/arm64/configs/nogravity_defconfig
+else
+    sed -i 's/CONFIG_KSU=y/CONFIG_KSU=n/g' ngk/arch/arm64/configs/nogravity_defconfig
+    sed -i 's/CONFIG_KSU=Y/CONFIG_KSU=n/g' ngk/arch/arm64/configs/nogravity_defconfig
+fi
+
+# Deactive dipper build
+sed -i 's/\.\/compile-beryllium\.sh/sh\ compile-beryllium\.sh/g' ngk/compile.sh
+sed -i 's/\.\/compile-dipper\.sh/\#sh\ compile-dipper\.sh/g' ngk/compile.sh
+
+# change line 11 in compile.sh to KernelSU-Next
+KSUCONF=$(grep -i "CONFIG_KSU=" ngk/arch/arm64/configs/nogravity_defconfig | cut -d "=" -f 2 -)
+KSUNEXT=""
+if [ "$KSUCONF" = "y" ] || [ "$KSUCONF" = "Y" ]; then
+    sed -i '11c\curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s v1.0.4 && rm -f /data/drivers/kernelsu && ln -s /data/KernelSU-Next/kernel /data/drivers/kernelsu' ngk/compile.sh
+    grep -i "obj-y += kernelsu/" ngk/drivers/Makefile || sed -i '$ a\obj-y += kernelsu\/' ngk/drivers/Makefile
+    KSUNEXT="y"
+else
+    sed -i '11c\rm -f /data/drivers/kernelsu' ngk/compile.sh
+    sed -i 's/obj-y\ +=\ kernelsu\///g' ngk/drivers/Makefile
+fi
+
+# change path library & Builder
+sed -i '13c\COMPILERDIR="/usr"' ngk/compile-beryllium.sh
+sed -i '24c\export KBUILD_BUILD_USER=G14nd1' ngk/compile-beryllium.sh
+sed -i '25c\export KBUILD_BUILD_HOST=CachyOS' ngk/compile-beryllium.sh
+sed -i '62c\KBUILD_COMPILER_STRING="Clang"' ngk/compile-beryllium.sh
+sed -i 's/-fstack-protector-strong//g' ngk/Makefile
+sed -i 's/-polly-opt-fusion=max//g' ngk/Makefile
+sed -i 's/-polly-ast-use-context//g' ngk/Makefile
+sed -i 's/-mllvm//g' ngk/Makefile
+sed -i 's/-polly//g' ngk/Makefile
+sed -i 's/-polly-run-dce//g' ngk/Makefile
+sed -i 's/-polly-run-inliner//g' ngk/Makefile
+sed -i 's/-polly-vectorizer=stripmine//g' ngk/Makefile
+sed -i 's/-polly-detect-keep-going//g' ngk/Makefile
+sed -i 's/-polly-invariant-load-hoisting//g' ngk/Makefile
+sed -i 's/-run-dce//g' ngk/Makefile
+sed -i 's/-run-inliner//g' ngk/Makefile
+sed -i 's/-vectorizer=stripmine//g' ngk/Makefile
+sed -i 's/-invariant-load-hoisting//g' ngk/Makefile
+grep -i "CFLAGS_quota_tree.o += -Wframe-larger-than=4096" ngk/fs/quota/Makefile || sed -i '$ a\CFLAGS_quota_tree.o += -Wframe-larger-than=4096' ngk/fs/quota/Makefile
+sed -i '1124c\           uint8_t mdie[SIR_MDIE_SIZE]);' ngk/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+sed -i '83c\    unsigned int online:1;' ngk/drivers/usb/gadget/function/f_accessory.c
+sed -i '89c\    unsigned int disconnected:1;' ngk/drivers/usb/gadget/function/f_accessory.c
+sed -i '2805c\struct ce_ops *ce_services_legacy(void)' ngk/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+sed -i '81c\struct target_if_ctx *target_if_get_ctx(void)' ngk/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+sed -i '259c\static void step_current_rgb_to_flow(void)' ngk/drivers/video/klapse/klapse.c
+sed -i '3616c\    ret = wlfw_wlan_mode_send_sync_msg((enum wlfw_driver_mode_enum_v01)mode);' ngk/drivers/soc/qcom/icnss.c
+sed -i '292c\struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach(void)' ngk/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+sed -i 's/EXPORT_SYMBOL(qpnp_regulator_init);/\/\/\ EXPORT_SYMBOL(qpnp_regulator_init);/g' ngk/drivers/regulator/qpnp-regulator.c
+sed -i 's/EXPORT_SYMBOL(regulator_stub_init);/\/\/\ EXPORT_SYMBOL(regulator_stub_init);/g' ngk/drivers/regulator/stub-regulator.c
+sed -i 's/__init //g' ngk/drivers/regulator/qpnp-regulator.c
+sed -i 's/__init //g' ngk/drivers/regulator/stub-regulator.c
+sed -i '/ksu_handle_faccessat/d' ngk/fs/open.c
+sed -i '/int\ \*flags);/d' ngk/fs/open.c
+sed -i '/ksu_handle_vfs_read/d' ngk/fs/read_write.c
+sed -i '/size_t\ \*count_ptr,\ loff_t\ \*\*pos);/d' ngk/fs/read_write.c
+sed -i '/ksu_handle_stat/d' ngk/fs/stat.c
+sed -i '/ksu_handle_execveat/d' ngk/fs/exec.c
+sed -i '/void\ \*envp,\ int\ \*flags);/d' ngk/fs/exec.c
+sed -i 's/-z\ norelro//g' ngk/arch/arm64/Makefile
+sed -i '463c\            (enum ipa_ip_type)rule_req->filter_spec_ex_list[i].ip_type;' ngk/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
+sed -i '465c\            (enum ipa_flt_action)rule_req->filter_spec_ex_list[i].filter_action;' ngk/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
+
+# fix for code CYPRESS CYTTSP5
+sed -i '45c\#if defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_FW_UPGRADE) || defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_BINARY_FW_UPGRADE)' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+sed -i '46c\#define CYTTSP5_FW_UPGRADE 1' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+sed -i '47c\#else' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+if [ "$(grep -i '#define CYTTSP5_FW_UPGRADE 0' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c)" = "" ]; then
+sed -i '47a\
+#define CYTTSP5_FW_UPGRADE 0\
+#endif' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+
+sed -i '51c\#if defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_TTCONFIG_UPGRADE) || defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_MANUAL_TTCONFIG_UPGRADE)' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+sed -i '52c\#define CYTTSP5_TTCONFIG_UPGRADE 1' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+sed -i '53c\#else' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+sed -i '53a\
+#define CYTTSP5_TTCONFIG_UPGRADE 0\
+#endif' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+fi
+
+sed -i 's/\&\&\ CM_ENABLED/\&\&\ (bool)CM_ENABLED/g' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
+sed -i 's/\&\&\ CP_ENABLED/\&\&\ (bool)CP_ENABLED/g' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
+
+
+# change script kernel label
+if [ "$KSUNEXT" = "y" ]; then
+    sed -i '163c\res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}-KNext"' ngk/scripts/setlocalversion
+    grep -i "drivers/kernelsu/Kconfig" ngk/drivers/Kconfig || sed -i 's/endmenu/source\ "drivers\/kernelsu\/Kconfig"/\nendmenu/g' ngk/drivers/Kconfig
+else
+    sed -i '163c\res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"' ngk/scripts/setlocalversion
+    sed -i 's/source\ "drivers\/kernelsu\/Kconfig"//g' ngk/drivers/Kconfig
+fi
+
+docker run \
+  --name 'ngk_build' \
+  --rm \
+  -v "./ngk:/data" \
+  -v "./ak3:/tmp/ak3" \
+  -v "./out:/tmp/out" \
+  -v "./bin/compile_kernel:/bin/compile_kernel" \
+  -v "./bin/zip_package:/bin/zip_package" \
+  -i ubuntu:build-20 sh -c "compile_kernel"

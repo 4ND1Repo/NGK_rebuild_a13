@@ -1,0 +1,24 @@
+#!/bin/bash
+
+cd /data
+
+DIR="$(pwd)"
+
+# GIT Safe Directory
+git config --global --add safe.directory /data
+if [ -d $DIR/KernelSU ]; then git config --global --add safe.directory $DIR/KernelSU; fi;
+if [ -d $DIR/KernelSU-Next ]; then git config --global --add safe.directory $DIR/KernelSU-Next; fi;
+
+if [ -d $DIR/KernelSU ]; then
+  rm -rf $DIR/KernelSU
+fi
+
+# removing and all builed file
+rm -rf $DIR/out
+mkdir $DIR/out
+
+# compile kernel
+sh compile.sh
+
+# Packaging Image with Custom Anykernel3
+zip_package
