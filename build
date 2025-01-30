@@ -111,9 +111,9 @@ fi
 
 sed -i 's/\&\&\ CM_ENABLED/\&\&\ (bool)CM_ENABLED/g' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
 sed -i 's/\&\&\ CP_ENABLED/\&\&\ (bool)CP_ENABLED/g' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
-sed -i '864 c\    struct sched_param param;
+grep -i 'param.sched_priority = MAX_USER_RT_PRIO / 2;' ngk/drivers/input/touchscreen/focaltech_touch/focaltech_core.c || sed -i '864 c\    struct sched_param param;\
     param.sched_priority = MAX_USER_RT_PRIO / 2;' ngk/drivers/input/touchscreen/focaltech_touch/focaltech_core.c
-sed -i '1087 c\    struct sched_param param;
+grep -i 'param.sched_priority = MAX_USER_RT_PRIO / 2;' ngk/drivers/input/touchscreen/nt36xxx/nt36xxx.c || sed -i '1087 c\    struct sched_param param;\
     param.sched_priority = MAX_USER_RT_PRIO / 2;' ngk/drivers/input/touchscreen/nt36xxx/nt36xxx.c
 
 # set local version without scm
