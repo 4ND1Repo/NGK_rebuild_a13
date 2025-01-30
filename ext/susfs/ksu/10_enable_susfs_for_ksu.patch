@@ -1,13 +1,3 @@
-diff --git a/../a/.git/ORIG_HEAD b/./.git/ORIG_HEAD
-index 66cb4513..6a6f7b94 100644
---- a/../a/.git/ORIG_HEAD
-+++ b/./.git/ORIG_HEAD
-@@ -1 +1 @@
--7ac03d638c07bac1cb1ae9749fdf7e0db60b4a7a
-+ae36e2085ccffe2a13d2c9771cc0b44cc2e1f32a
-diff --git a/../a/.git/index b/./.git/index
-index f96ba4c0..9ca4ba0e 100644
-Binary files a/../a/.git/index and b/./.git/index differ
 diff --git a/../a/kernel/Kconfig b/./kernel/Kconfig
 index 1f3802f6..39d06f4f 100644
 --- a/../a/kernel/Kconfig
@@ -15,7 +5,7 @@ index 1f3802f6..39d06f4f 100644
 @@ -24,4 +24,87 @@ config KSU_ALLOWLIST_WORKAROUND
            Enable session keyring init workaround for problematic devices.
            Useful for situations where the SU allowlist is not kept after a reboot.
- 
+
 +menu "KernelSU - SUSFS"
 +config KSU_SUSFS
 +    bool "KernelSU addon - SUSFS"
@@ -107,7 +97,7 @@ index 9a35b3bf..adbdfd27 100644
 @@ -138,4 +138,37 @@ endif
  ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat
  ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
- 
+
 +ifeq ($(shell test -e $(srctree)/fs/susfs.c; echo $$?),0)
 +ifdef KSU_SUSFS
 +ccflags-y += -DKSU_SUSFS
@@ -149,7 +139,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -33,6 +33,13 @@
  #include <linux/vmalloc.h>
  #endif
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +#include <linux/susfs.h>
 +#ifdef CONFIG_KSU_SUSFS_SUS_SU
@@ -163,7 +153,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -45,6 +52,19 @@
  #include "throne_tracker.h"
  #include "kernel_compat.h"
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +bool susfs_is_allow_su(void)
 +{
@@ -182,9 +172,9 @@ index ee505ca9..6dbf1ef9 100644
  #endif
 @@ -194,7 +214,7 @@ void escape_to_root(void)
  			sizeof(cred->cap_ambient));
- 
+
  	setup_groups(profile, cred);
--	
+-
 +
  #ifdef KSU_GET_CRED_RCU
  	rcu_read_unlock();
@@ -192,7 +182,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -414,6 +434,164 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
  		return 0;
  	}
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +	if (current_uid_val == 0) {
 +#ifdef CONFIG_KSU_SUSFS_SUS_PATH
@@ -357,7 +347,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -498,7 +676,11 @@ static int ksu_umount_mnt(struct path *path, int flags)
  #endif
  }
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +void try_umount(const char *mnt, bool check_mnt, int flags)
 +#else
@@ -369,7 +359,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -541,6 +723,27 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
  		return 0;
  	}
- 
+
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +	// check if spawned process is zygote
 +	if (unlikely(new_uid.val == 0 && is_zygote(new->security))) {
@@ -397,7 +387,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -551,6 +754,13 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
  		return 0;
  	}
- 
+
 +#ifdef CONFIG_KSU_SUSFS_SUS_PATH
 +	else {
 +		// if new uid is not root granted, then drop a payload to inidicate that sus_path will be effective on this uid
@@ -411,7 +401,7 @@ index ee505ca9..6dbf1ef9 100644
 @@ -559,21 +769,32 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
  #endif
  	}
- 
+
 +#ifndef CONFIG_KSU_SUSFS_SUS_MOUNT
  	// check old process's selinux context, if it is not zygote, ignore it!
  	// because some su apps may setuid to untrusted_app but they are in global mount namespace
@@ -429,7 +419,7 @@ index ee505ca9..6dbf1ef9 100644
  	pr_info("handle umount for uid: %d, pid: %d\n", new_uid.val,
  		current->pid);
  #endif
- 
+
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +out_try_umount:
 +#endif
@@ -445,11 +435,11 @@ index ee505ca9..6dbf1ef9 100644
  	// try umount ksu temp path
  	try_umount("/debug_ramdisk", false, MNT_DETACH);
  	try_umount("/sbin", false, MNT_DETACH);
--	
+-
 +
  	// try umount hosts file
  	try_umount("/system/etc/hosts", false, MNT_DETACH);
- 
+
 diff --git a/../a/kernel/core_hook.h b/./kernel/core_hook.h
 index 616951e8..e80ce4a9 100644
 --- a/../a/kernel/core_hook.h
@@ -457,7 +447,7 @@ index 616951e8..e80ce4a9 100644
 @@ -6,4 +6,10 @@
  void __init ksu_core_init(void);
  void ksu_core_exit(void);
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +bool susfs_is_allow_su(void);
 +void escape_to_root(void);
@@ -472,7 +462,7 @@ index a1886433..f898707e 100644
 @@ -76,6 +76,16 @@ void ksu_android_ns_fs_check()
  	task_unlock(current);
  }
- 
+
 +int ksu_access_ok(const void *addr, unsigned long size) {
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 +    /* For kernels before 5.0.0, pass the type argument to access_ok. */
@@ -492,7 +482,7 @@ index 6d79f7ed..b0d664a9 100644
 +++ b/./kernel/kernel_compat.h
 @@ -29,6 +29,7 @@ extern struct key *init_session_keyring;
  #endif
- 
+
  extern void ksu_android_ns_fs_check();
 +extern int ksu_access_ok(const void *addr, unsigned long size);
  extern struct file *ksu_filp_open_compat(const char *filename, int flags,
@@ -505,24 +495,24 @@ index 3639edc2..4a9cfaba 100644
 @@ -11,6 +11,10 @@
  #include "ksu.h"
  #include "throne_tracker.h"
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +#include <linux/susfs.h>
 +#endif
 +
  static struct workqueue_struct *ksu_workqueue;
- 
+
  bool ksu_queue_work(struct work_struct *work)
 @@ -49,6 +53,10 @@ int __init kernelsu_init(void)
  	pr_alert("*************************************************************");
  #endif
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +	susfs_init();
 +#endif
 +
  	ksu_core_init();
- 
+
  	ksu_workqueue = alloc_ordered_workqueue("kernelsu_work_queue", 0);
 diff --git a/../a/kernel/ksud.c b/./kernel/ksud.c
 index 68e47352..45b43928 100644
@@ -531,13 +521,13 @@ index 68e47352..45b43928 100644
 @@ -64,6 +64,10 @@ bool ksu_execveat_hook __read_mostly = true;
  bool ksu_input_hook __read_mostly = true;
  #endif
- 
+
 +#ifdef CONFIG_KSU_SUSFS_SUS_SU
 +bool ksu_devpts_hook = false;
 +#endif
 +
  u32 ksu_devpts_sid;
- 
+
  void on_post_fs_data(void)
 diff --git a/../a/kernel/selinux/rules.c b/./kernel/selinux/rules.c
 index 1ba6d853..6d36db2f 100644
@@ -546,7 +536,7 @@ index 1ba6d853..6d36db2f 100644
 @@ -134,6 +134,11 @@ void apply_kernelsu_rules()
      ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
      ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
- 
+
 +#ifdef CONFIG_KSU_SUSFS
 +   	// Allow umount in zygote process without installing zygisk
 +   	ksu_allow(db, "zygote", "labeledfs", "filesystem", "unmount");
@@ -554,7 +544,7 @@ index 1ba6d853..6d36db2f 100644
 +
  	rcu_read_unlock();
  }
- 
+
 diff --git a/../a/kernel/selinux/selinux.c b/./kernel/selinux/selinux.c
 index 4ba20b04..b98e787a 100644
 --- a/../a/kernel/selinux/selinux.c
@@ -562,7 +552,7 @@ index 4ba20b04..b98e787a 100644
 @@ -131,6 +131,23 @@ bool is_zygote(void *sec)
  	return result;
  }
- 
+
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +u32 ksu_get_zygote_sid(void)
 +{
@@ -581,16 +571,16 @@ index 4ba20b04..b98e787a 100644
 +#endif
 +
  #define DEVPTS_DOMAIN "u:object_r:ksu_file:s0"
- 
+
  u32 ksu_get_devpts_sid()
 diff --git a/../a/kernel/selinux/selinux.h b/./kernel/selinux/selinux.h
 index 07120c25..689f04de 100644
 --- a/../a/kernel/selinux/selinux.h
 +++ b/./kernel/selinux/selinux.h
 @@ -20,6 +20,12 @@ bool is_zygote(void *cred);
- 
+
  void apply_kernelsu_rules();
- 
+
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +u32 ksu_get_zygote_sid(void);
 +
@@ -598,7 +588,7 @@ index 07120c25..689f04de 100644
 +#endif
 +
  u32 ksu_get_devpts_sid();
- 
+
  #endif
 diff --git a/../a/kernel/sucompat.c b/./kernel/sucompat.c
 index 9b45cd0d..e75dfecf 100644

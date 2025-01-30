@@ -47,3 +47,11 @@ on property:sys.boot_completed=1
     #GPU
     write /sys/class/kgsl/kgsl-3d0/max_clock_mhz 800
     write /sys/class/kgsl/kgsl-3d0/min_clock_mhz 160
+
+    #IO Scheduler
+    write /sys/block/sda/queue/scheduler zen
+    write /sys/block/sdb/queue/scheduler zen
+    write /sys/block/sdc/queue/scheduler zen
+    write /sys/block/sdd/queue/scheduler zen
+    write /sys/block/sde/queue/scheduler zen
+    write /sys/block/sdf/queue/scheduler zen
