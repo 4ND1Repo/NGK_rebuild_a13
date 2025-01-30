@@ -6,7 +6,9 @@ KSU="y"
 
 # checking requirement
 if ! command -v docker &> /dev/null; then echo "Please install docker first";  exit 1; fi
-if [ "$(docker images -f reference=ubuntu:build-20 | grep ubuntu | cut -d" " -f1)" != "ubuntu" ]; then echo "Please build image docker from Dockerfile with tag ubuntu:build-20"; exit 1; fi;
+if [ "$(docker images -f reference=ubuntu:build-20 | grep ubuntu | cut -d" " -f1)" != "ubuntu" ]; then
+    docker build --rm -f Dockerfile -t ubuntu:build-20 .
+fi
 
 
 if [ ! -d "$(pwd)/ngk" ]; then
@@ -65,6 +67,7 @@ sed -i 's/-run-inliner//g' ngk/Makefile
 sed -i 's/-vectorizer=stripmine//g' ngk/Makefile
 sed -i 's/-invariant-load-hoisting//g' ngk/Makefile
 grep -i "CFLAGS_quota_tree.o += -Wframe-larger-than=4096" ngk/fs/quota/Makefile || sed -i '$ a\CFLAGS_quota_tree.o += -Wframe-larger-than=4096' ngk/fs/quota/Makefile
+grep -i "CFLAGS_sigreturn.o += -fstack-protector" ngk/arch/arm64/kernel/vdso32/Makefile || sed -i '$ a\CFLAGS_sigreturn.o += -fstack-protector' ngk/arch/arm64/kernel/vdso32/Makefile
 sed -i '1124c\           uint8_t mdie[SIR_MDIE_SIZE]);' ngk/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
 sed -i '83c\    unsigned int online:1;' ngk/drivers/usb/gadget/function/f_accessory.c
 sed -i '89c\    unsigned int disconnected:1;' ngk/drivers/usb/gadget/function/f_accessory.c
@@ -108,14 +111,22 @@ fi
 sed -i 's/\&\&\ CM_ENABLED/\&\&\ (bool)CM_ENABLED/g' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
 sed -i 's/\&\&\ CP_ENABLED/\&\&\ (bool)CP_ENABLED/g' ngk/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
 
+# set local version without scm
+sed -i '168c\    res="$res"' ngk/scripts/setlocalversion
+
 
 # change script kernel label
 if [ "$KSUNEXT" = "y" ]; then
     sed -i '163c\res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}-KNext"' ngk/scripts/setlocalversion
     grep -i "drivers/kernelsu/Kconfig" ngk/drivers/Kconfig || sed -i 's/endmenu/source\ "drivers\/kernelsu\/Kconfig"/\nendmenu/g' ngk/drivers/Kconfig
+
+    # set susfs patching function
+    sed -i '12c\sh /tmp/ext/susfs.sh' ngk/compile.sh
 else
     sed -i '163c\res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"' ngk/scripts/setlocalversion
     sed -i 's/source\ "drivers\/kernelsu\/Kconfig"//g' ngk/drivers/Kconfig
+
+    sed -i '12c\ ' ngk/compile.sh
 fi
 
 docker run \
@@ -124,6 +135,7 @@ docker run \
   -v "./ngk:/data" \
   -v "./ak3:/tmp/ak3" \
   -v "./out:/tmp/out" \
+  -v "./ext:/tmp/ext" \
   -v "./bin/compile_kernel:/bin/compile_kernel" \
   -v "./bin/zip_package:/bin/zip_package" \
   -i ubuntu:build-20 sh -c "compile_kernel"
