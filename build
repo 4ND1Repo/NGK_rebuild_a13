@@ -7,6 +7,7 @@ BUILD_USER="G14nd1"
 BUILD_HOST="CachyOS"
 KSU="y"
 KSUNEXT="y"
+SUSFS="n"
 
 
 # checking requirement
@@ -54,7 +55,7 @@ sed -i "7c\kernel.string=${CONFIG_LOCALVERSION:1}" ak3/anykernel.sh
 
 
 # change script kernel label
-if [ "$KSUNEXT" = "y" ]; then
+if [[ "$KSUNEXT" =~ [yY] && "$SUSFS" =~ [yY] ]]; then
     # set susfs patching function
     sed -i '14a\sh /tmp/ext/susfs.sh' ngk/compile.sh
 fi
