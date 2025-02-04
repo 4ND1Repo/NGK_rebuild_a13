@@ -27,10 +27,6 @@ echo "Kernel : $KVERSION"
 echo "KSU    : $KSUVERSION"
 echo ""
 
-sed -i -e "s/Kernel\ Version\ \:\ .*/Kernel\ Version\ \:\ V$KVERSION/" $DIR/banner
-sed -i -e "s/KSU\ Version\ \ \ \ \:\ .*/KSU\ Version\ \ \ \ \:\ $KSUVERSION/" $DIR/banner
-
-
 cd $DIR
 
 echo "============= Pack SE 10.3.7 Beryllium =============="
@@ -72,24 +68,10 @@ echo ""
 # clean Image
 rm -f Image.gz-dtb
 
+# change user in folder out zip
+chown -Rf 1000:1000 $ZIP_OUT
 
-echo "============= Pack Auto Beryllium =============="
-mkdir $DIR/fw
-mkdir $DIR/fw/9.1.24
-mkdir $DIR/fw/10.3.7
-mkdir $DIR/fw/9.1.24/se
-mkdir $DIR/fw/9.1.24/nse
-mkdir $DIR/fw/10.3.7/se
-mkdir $DIR/fw/10.3.7/nse
-cp $OUTPUT/beryllium/10.3.7-SE/Image.gz-dtb $DIR/fw/10.3.7/se
-cp $OUTPUT/beryllium/10.3.7-NSE/Image.gz-dtb $DIR/fw/10.3.7/nse
-cp $OUTPUT/beryllium/9.1.24-SE/Image.gz-dtb $DIR/fw/9.1.24/se
-cp $OUTPUT/beryllium/9.1.24-NSE/Image.gz-dtb $DIR/fw/9.1.24/nse
-
-zip -r $ZIP_OUT/$PREFIX\[AUTOCHECK\].zip ./
-
-rm -rf $DIR/fw
-echo "====================================================="
-echo ""
+# remove builder folder
+rm -rf $DIRKERNEL/*
 
 cd ..

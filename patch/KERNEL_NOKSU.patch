@@ -1,0 +1,881 @@
+diff --git a/../k0/Makefile b/./Makefile
+index 85ef5e523..89f9fd002 100644
+--- a/../k0/Makefile
++++ b/./Makefile
+@@ -308,7 +308,7 @@ else
+ HOSTCC       = gcc
+ HOSTCXX      = g++
+ endif
+-HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -std=gnu89 -pipe -fforce-addr 
++HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -std=gnu89 -pipe -fforce-addr
+ HOSTCXXFLAGS = -Ofast
+ 
+ ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
+@@ -411,13 +411,21 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
+ 		   -fno-strict-aliasing -fno-common -fshort-wchar \
+ 		   -Werror-implicit-function-declaration \
+ 		   -Wno-format-security \
+-		   -Wno-unused-function\
++		   -Wno-unused-function \
++		   -Wno-unused-variable \
++		   -Wno-unused-label \
++		   -Wno-undef \
++		   -Wimplicit-function-declaration \
++		   -Wexpansion-to-defined \
++		   -Wconstant-logical-operand \
++		   -Waddress-of-packed-member \
++		   -Wsingle-bit-bitfield-constant-conversion \
+ 		   -ffast-math -mcpu=cortex-a55 -mtune=cortex-a55 \
+ 		   -std=gnu89 \
+ 		   -mllvm -polly \
+ 		   -mllvm -polly-run-dce \
+ 		   -mllvm -polly-run-inliner \
+-		   -mllvm -polly-opt-fusion=max \
++#		   -mllvm -polly-opt-fusion=max \
+ 		   -mllvm -polly-ast-use-context \
+ 		   -mllvm -polly-vectorizer=stripmine \
+ 		   -mllvm -polly-detect-keep-going \
+@@ -794,14 +802,14 @@ KBUILD_CFLAGS	+= -O3 -mtune=cortex-a55 -mcpu=cortex-a55+crc+crypto+fp16+simd+sve
+ -ftree-vectorize \
+ -fforce-addr \
+ ##-ftree-loop-vectorize \
+-##-Wno-attribute-alias 
++##-Wno-attribute-alias
+ 
+-#-floop-nest-optimize -fprefetch-loop-arrays 
+-#KBUILD_CFLAGS	+= -fno-gcse  
++#-floop-nest-optimize -fprefetch-loop-arrays
++#KBUILD_CFLAGS	+= -fno-gcse
+ #KBUILD_CFLAGS	+= -floop-strip-mine -floop-block
+ #KBUILD_CFLAGS	+= -floop-optimize -ftree-vectorize -ftracer
+ LDFLAGS		+= -O3
+-LDFLAGS += -fuse-ld=gold
++LDFLAGS += -fuse-ld=gold --no-warn-rwx-segments
+ KBUILD_CFLAGS	+= $(call cc-option,-mabi=lp64)
+ KBUILD_AFLAGS	+= $(call cc-option,-mabi=lp64)
+ 
+@@ -1959,4 +1967,4 @@ FORCE:
+ 
+ # Declare the contents of the .PHONY variable as phony.  We keep that
+ # information in a variable so we can use it in if_changed and friends.
+-.PHONY: $(PHONY)
+\ No newline at end of file
++.PHONY: $(PHONY)
+diff --git a/../k0/arch/arm64/Makefile b/./arch/arm64/Makefile
+index 8f8ad47ba..302512190 100644
+--- a/../k0/arch/arm64/Makefile
++++ b/./arch/arm64/Makefile
+@@ -10,7 +10,7 @@
+ #
+ # Copyright (C) 1995-2001 by Russell King
+ 
+-LDFLAGS_vmlinux	:=--no-undefined -X -z norelro
++LDFLAGS_vmlinux	:=--no-undefined -X
+ CPPFLAGS_vmlinux.lds = -DTEXT_OFFSET=$(TEXT_OFFSET)
+ GZFLAGS		:=-9
+ 
+diff --git a/../k0/arch/arm64/configs/nogravity_defconfig b/./arch/arm64/configs/nogravity_defconfig
+index 84da2c286..f976e972b 100644
+--- a/../k0/arch/arm64/configs/nogravity_defconfig
++++ b/./arch/arm64/configs/nogravity_defconfig
+@@ -221,6 +221,7 @@ CONFIG_JUMP_LABEL=y
+ # CONFIG_HAVE_64BIT_ALIGNED_ACCESS is not set
+ CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+ CONFIG_HAVE_KPROBES=y
++CONFIG_KPROBE_EVENTS=y
+ CONFIG_HAVE_KRETPROBES=y
+ CONFIG_HAVE_ARCH_TRACEHOOK=y
+ CONFIG_HAVE_DMA_CONTIGUOUS=y
+@@ -247,7 +248,7 @@ CONFIG_HAVE_CC_STACKPROTECTOR=y
+ CONFIG_CC_STACKPROTECTOR=y
+ # CONFIG_CC_STACKPROTECTOR_NONE is not set
+ # CONFIG_CC_STACKPROTECTOR_REGULAR is not set
+-CONFIG_CC_STACKPROTECTOR_STRONG=y
++# CONFIG_CC_STACKPROTECTOR_STRONG=y
+ CONFIG_LTO=y
+ CONFIG_LD_DEAD_CODE_DATA_ELIMINATION=y
+ CONFIG_ARCH_SUPPORTS_LTO_CLANG=y
+@@ -5288,4 +5289,4 @@ CONFIG_MACH_XIAOMI_E10=y
+ # CONFIG_MACH_XIAOMI_E1S is not set
+ # CONFIG_MACH_XIAOMI_E8 is not set
+ # CONFIG_MACH_XIAOMI_E5 is not set
+-CONFIG_BERYLLIUM=y
+\ No newline at end of file
++CONFIG_BERYLLIUM=y
+diff --git a/../k0/arch/arm64/kernel/vdso32/Makefile b/./arch/arm64/kernel/vdso32/Makefile
+index ceff67976..04ff9a341 100644
+--- a/../k0/arch/arm64/kernel/vdso32/Makefile
++++ b/./arch/arm64/kernel/vdso32/Makefile
+@@ -94,7 +94,7 @@ VDSO_LDFLAGS := $(VDSO_CPPFLAGS)
+ # From arm vDSO Makefile
+ VDSO_LDFLAGS += -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname=linux-vdso.so.1
+ VDSO_LDFLAGS += -Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
+-VDSO_LDFLAGS += -nostdlib -shared -mfloat-abi=soft
++VDSO_LDFLAGS += -nostdlib -shared -mfloat-abi=soft -z noexecstack
+ VDSO_LDFLAGS += $(call cc32-ldoption,-Wl$(comma)--hash-style=sysv)
+ VDSO_LDFLAGS += $(call cc32-ldoption,-Wl$(comma)--build-id)
+ VDSO_LDFLAGS += $(call cc32-ldoption,-fuse-ld=bfd)
+diff --git a/../k0/arch/mips/include/asm/kvm_host.h b/./arch/mips/include/asm/kvm_host.h
+index 22573b4f2..901267db0 100644
+--- a/../k0/arch/mips/include/asm/kvm_host.h
++++ b/./arch/mips/include/asm/kvm_host.h
+@@ -84,7 +84,7 @@
+ 					 (0x8000 - PAGE_SIZE))
+ 
+ #define KVM_GUEST_KERNEL_MODE(vcpu)	((kvm_read_c0_guest_status(vcpu->arch.cop0) & (ST0_EXL | ST0_ERL)) || \
+-					((kvm_read_c0_guest_status(vcpu->arch.cop0) & KSU_USER) == 0))
++					(kvm_read_c0_guest_status(vcpu->arch.cop0) == 0))
+ 
+ #define KVM_GUEST_KUSEG			0x00000000UL
+ #define KVM_GUEST_KSEG0			0x40000000UL
+diff --git a/../k0/arch/mips/include/asm/mipsregs.h b/./arch/mips/include/asm/mipsregs.h
+index df78b2ca7..413106769 100644
+--- a/../k0/arch/mips/include/asm/mipsregs.h
++++ b/./arch/mips/include/asm/mipsregs.h
+@@ -277,10 +277,6 @@
+ #define ST0_IE			0x00000001
+ #define ST0_EXL			0x00000002
+ #define ST0_ERL			0x00000004
+-#define ST0_KSU			0x00000018
+-#  define KSU_USER		0x00000010
+-#  define KSU_SUPERVISOR	0x00000008
+-#  define KSU_KERNEL		0x00000000
+ #define ST0_UX			0x00000020
+ #define ST0_SX			0x00000040
+ #define ST0_KX			0x00000080
+diff --git a/../k0/arch/mips/kernel/smp-mt.c b/./arch/mips/kernel/smp-mt.c
+index e077ea3e1..bf0b8a61d 100644
+--- a/../k0/arch/mips/kernel/smp-mt.c
++++ b/./arch/mips/kernel/smp-mt.c
+@@ -39,7 +39,7 @@
+ static void __init smvp_copy_vpe_config(void)
+ {
+ 	write_vpe_c0_status(
+-		(read_c0_status() & ~(ST0_IM | ST0_IE | ST0_KSU)) | ST0_CU0);
++		(read_c0_status() & ~(ST0_IM | ST0_IE)) | ST0_CU0);
+ 
+ 	/* set config to be the same as vpe0, particularly kseg0 coherency alg */
+ 	write_vpe_c0_config( read_c0_config());
+diff --git a/../k0/arch/mips/kernel/traps.c b/./arch/mips/kernel/traps.c
+index 278e81c9e..f426ee6fb 100644
+--- a/../k0/arch/mips/kernel/traps.c
++++ b/./arch/mips/kernel/traps.c
+@@ -201,7 +201,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 	struct pt_regs regs;
+ 	mm_segment_t old_fs = get_fs();
+ 
+-	regs.cp0_status = KSU_KERNEL;
+ 	if (sp) {
+ 		regs.regs[29] = (unsigned long)sp;
+ 		regs.regs[31] = 0;
+@@ -312,20 +311,6 @@ static void __show_regs(const struct pt_regs *regs)
+ 			pr_cont("SX ");
+ 		if (regs->cp0_status & ST0_UX)
+ 			pr_cont("UX ");
+-		switch (regs->cp0_status & ST0_KSU) {
+-		case KSU_USER:
+-			pr_cont("USER ");
+-			break;
+-		case KSU_SUPERVISOR:
+-			pr_cont("SUPERVISOR ");
+-			break;
+-		case KSU_KERNEL:
+-			pr_cont("KERNEL ");
+-			break;
+-		default:
+-			pr_cont("BAD_MODE ");
+-			break;
+-		}
+ 		if (regs->cp0_status & ST0_ERL)
+ 			pr_cont("ERL ");
+ 		if (regs->cp0_status & ST0_EXL)
+diff --git a/../k0/arch/mips/kvm/entry.c b/./arch/mips/kvm/entry.c
+index e92fb190e..1a7b966d2 100644
+--- a/../k0/arch/mips/kvm/entry.c
++++ b/./arch/mips/kvm/entry.c
+@@ -229,7 +229,7 @@ void *kvm_mips_build_vcpu_run(void *addr)
+ 	 * Setup status register for running the guest in UM, interrupts
+ 	 * are disabled
+ 	 */
+-	UASM_i_LA(&p, K0, ST0_EXL | KSU_USER | ST0_BEV | ST0_KX_IF_64);
++	UASM_i_LA(&p, K0, ST0_EXL | ST0_BEV | ST0_KX_IF_64);
+ 	uasm_i_mtc0(&p, K0, C0_STATUS);
+ 	uasm_i_ehb(&p);
+ 
+@@ -242,7 +242,7 @@ void *kvm_mips_build_vcpu_run(void *addr)
+ 	 * interrupt mask as it was but make sure that timer interrupts
+ 	 * are enabled
+ 	 */
+-	uasm_i_addiu(&p, K0, ZERO, ST0_EXL | KSU_USER | ST0_IE | ST0_KX_IF_64);
++	uasm_i_addiu(&p, K0, ZERO, ST0_EXL | ST0_IE | ST0_KX_IF_64);
+ 	uasm_i_andi(&p, V0, V0, ST0_IM);
+ 	uasm_i_or(&p, K0, K0, V0);
+ 	uasm_i_mtc0(&p, K0, C0_STATUS);
+@@ -283,8 +283,7 @@ static void *kvm_mips_build_enter_guest(void *addr)
+ 	UASM_i_LW(&p, T0, offsetof(struct kvm_vcpu_arch, cop0), K1);
+ 	UASM_i_LW(&p, T0, offsetof(struct mips_coproc, reg[MIPS_CP0_STATUS][0]),
+ 		  T0);
+-	uasm_i_andi(&p, T0, T0, KSU_USER | ST0_ERL | ST0_EXL);
+-	uasm_i_xori(&p, T0, T0, KSU_USER);
++	uasm_i_andi(&p, T0, T0, ST0_ERL | ST0_EXL);
+ 	uasm_il_bnez(&p, &r, T0, label_kernel_asid);
+ 	 UASM_i_ADDIU(&p, T1, K1,
+ 		      offsetof(struct kvm_vcpu_arch, guest_kernel_asid));
+@@ -516,8 +515,8 @@ void *kvm_mips_build_exit(void *addr)
+ 		uasm_l_msa_1(&l, p);
+ 	}
+ 
+-	/* Now that the new EBASE has been loaded, unset BEV and KSU_USER */
+-	uasm_i_addiu(&p, AT, ZERO, ~(ST0_EXL | KSU_USER | ST0_IE));
++	/* Now that the new EBASE has been loaded, unset BEV */
++	uasm_i_addiu(&p, AT, ZERO, ~(ST0_EXL | ST0_IE));
+ 	uasm_i_and(&p, V0, V0, AT);
+ 	uasm_i_lui(&p, AT, ST0_CU0 >> 16);
+ 	uasm_i_or(&p, V0, V0, AT);
+@@ -645,7 +644,7 @@ static void *kvm_mips_build_ret_to_guest(void *addr)
+ 	build_set_exc_base(&p, T0);
+ 
+ 	/* Setup status register for running guest in UM */
+-	uasm_i_ori(&p, V1, V1, ST0_EXL | KSU_USER | ST0_IE);
++	uasm_i_ori(&p, V1, V1, ST0_EXL | ST0_IE);
+ 	UASM_i_LA(&p, AT, ~(ST0_CU0 | ST0_MX | ST0_SX | ST0_UX));
+ 	uasm_i_and(&p, V1, V1, AT);
+ 	uasm_i_mtc0(&p, V1, C0_STATUS);
+diff --git a/../k0/arch/mips/sgi-ip27/ip27-nmi.c b/./arch/mips/sgi-ip27/ip27-nmi.c
+index cfceaea92..be2e02428 100644
+--- a/../k0/arch/mips/sgi-ip27/ip27-nmi.c
++++ b/./arch/mips/sgi-ip27/ip27-nmi.c
+@@ -94,22 +94,6 @@ void nmi_cpu_eframe_save(nasid_t nasid, int slice)
+ 		printk("SX	");
+ 	if (nr->sr & ST0_UX)
+ 		printk("UX ");
+-
+-	switch (nr->sr & ST0_KSU) {
+-	case KSU_USER:
+-		printk("USER ");
+-		break;
+-	case KSU_SUPERVISOR:
+-		printk("SUPERVISOR ");
+-		break;
+-	case KSU_KERNEL:
+-		printk("KERNEL ");
+-		break;
+-	default:
+-		printk("BAD_MODE ");
+-		break;
+-	}
+-
+ 	if (nr->sr & ST0_ERL)
+ 		printk("ERL ");
+ 	if (nr->sr & ST0_EXL)
+diff --git a/../k0/compile-beryllium.sh b/./compile-beryllium.sh
+old mode 100644
+new mode 100755
+index 21d446f33..8b2a8d7a6
+--- a/../k0/compile-beryllium.sh
++++ b/./compile-beryllium.sh
+@@ -10,9 +10,10 @@ DEFCONFIG=nogravity_defconfig
+ #DEFCONFIG=beryllium_defconfig
+ COMPILER=clang
+ LINKER=""
+-COMPILERDIR="/media/pierre/Expension/Android/PocophoneF1/Kernels/Proton-Clang"
++COMPILERDIR="/usr"
+ 
+ # Outputs
++if [ ! -d out ]; then mkdir out; fi
+ mkdir out/outputs
+ mkdir out/outputs/${PHONE}
+ mkdir out/outputs/${PHONE}/9.1.24-SE
+@@ -90,7 +91,7 @@ then
+ else
+     echo "Build succesful"
+     cp out/arch/arm64/boot/Image.gz-dtb out/outputs/${PHONE}/9.1.24-SE/Image.gz-dtb
+-    
++
+     #9.1.24-NSE
+     cp arch/arm64/boot/dts/qcom/SE_NSE/NSE/* arch/arm64/boot/dts/qcom/
+     Build
+diff --git a/../k0/compile-dipper.sh b/./compile-dipper.sh
+old mode 100644
+new mode 100755
+diff --git a/../k0/compile.sh b/./compile.sh
+old mode 100644
+new mode 100755
+index 6505f5416..f581a799e
+--- a/../k0/compile.sh
++++ b/./compile.sh
+@@ -8,13 +8,11 @@ yellow='\033[0;33m'
+ red='\033[0;31m'
+ nocol='\033[0m'
+ 
+-curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+-
+ # Cleanup
+ rm -rf out/outputs/*
+ 
+ ./compile-beryllium.sh
+-./compile-dipper.sh
++# ./compile-dipper.sh
+ 
+ BUILD_END=$(date +"%s")
+ DIFF=$(($BUILD_END - $BUILD_START))
+diff --git a/../k0/drivers/Makefile b/./drivers/Makefile
+index d156da178..b33c4e129 100644
+--- a/../k0/drivers/Makefile
++++ b/./drivers/Makefile
+@@ -187,4 +187,3 @@ obj-$(CONFIG_HALLS)		+= halls/
+ 
+ obj-$(CONFIG_AINUR_DTS_SW) += dts_eagle/
+ 
+-obj-y += kernelsu/
+diff --git a/../k0/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c b/./drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
+index 14dcdb572..b8806a821 100644
+--- a/../k0/drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
++++ b/./drivers/input/touchscreen/cyttsp5/cyttsp5_device_access.c
+@@ -1665,14 +1665,16 @@ static ssize_t cyttsp5_cmcp_test_show(struct device *dev,
+ 
+ 	if (no_builtin_file)
+ 		goto no_builtin;
+-
+-	if (test_item && CM_ENABLED)
++#ifdef CM_ENABLED
++	if (test_item)
+ 		validate_cm_test_results(dev, configuration, cmcp_info,
+ 			result, &final_pass, test_item);
+-
+-	if (test_item && CP_ENABLED)
++#endif
++#ifdef CP_ENABLED
++	if (test_item)
+ 		validate_cp_test_results(dev, configuration, cmcp_info,
+ 			result, &final_pass, test_item);
++#endif
+ no_builtin:
+ 	/*full test and full check*/
+ 	if ((dad->cmcp_test_items == CMCP_FULL) && (dad->cmcp_range_check == 0))
+@@ -1835,15 +1837,16 @@ static ssize_t cyttsp5_cmcp_test_store(struct device *dev,
+ 	 */
+ 	if (test_item > 0 && test_item < 5)
+ 		range_check = 0;
+-		dad->cmcp_test_items = test_item;
+-		dad->cmcp_range_check = range_check;
+-		dad->cmcp_force_calibrate = force_calibrate;
+-		parade_debug(dev, DEBUG_LEVEL_2,
+-			"%s: Item: %s, Range check: %s, Force calibrate: %s.\n",
+-			__func__,
+-			cmcp_test_case_array[test_item],
+-			cmcp_test_range_check_array[range_check],
+-			cmcp_test_force_cal_array[force_calibrate]);
++
++	dad->cmcp_test_items = test_item;
++	dad->cmcp_range_check = range_check;
++	dad->cmcp_force_calibrate = force_calibrate;
++	parade_debug(dev, DEBUG_LEVEL_2,
++		"%s: Item: %s, Range check: %s, Force calibrate: %s.\n",
++		__func__,
++		cmcp_test_case_array[test_item],
++		cmcp_test_range_check_array[range_check],
++		cmcp_test_force_cal_array[force_calibrate]);
+ 
+ error:
+ 	mutex_unlock(&dad->sysfs_lock);
+diff --git a/../k0/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c b/./drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+index 9f3f58646..3e7c65256 100644
+--- a/../k0/drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
++++ b/./drivers/input/touchscreen/cyttsp5/cyttsp5_loader.c
+@@ -42,13 +42,17 @@
+ #define CYTTSP5_AUTO_LOAD_FOR_CORRUPTED_FW 1
+ #define CYTTSP5_LOADER_FW_UPGRADE_RETRY_COUNT 3
+ 
+-#define CYTTSP5_FW_UPGRADE \
+-	(defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_FW_UPGRADE) \
+-	|| defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_BINARY_FW_UPGRADE))
++#if (defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_FW_UPGRADE) || defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_BINARY_FW_UPGRADE))
++#define CYTTSP5_FW_UPGRADE 1
++#else
++#define CYTTSP5_FW_UPGRADE 0
++#endif
+ 
+-#define CYTTSP5_TTCONFIG_UPGRADE \
+-	(defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_TTCONFIG_UPGRADE) \
+-	|| defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_MANUAL_TTCONFIG_UPGRADE))
++#if (defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_TTCONFIG_UPGRADE) || defined(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_MANUAL_TTCONFIG_UPGRADE))
++#define CYTTSP5_TTCONFIG_UPGRADE 1
++#else
++#define CYTTSP5_TTCONFIG_UPGRADE 0
++#endif
+ 
+ static const u8 cyttsp5_security_key[] = {
+ 	0xA5, 0x01, 0x02, 0x03, 0xFF, 0xFE, 0xFD, 0x5A
+diff --git a/../k0/drivers/input/touchscreen/focaltech_touch/focaltech_core.c b/./drivers/input/touchscreen/focaltech_touch/focaltech_core.c
+index bac845d43..18d90599b 100644
+--- a/../k0/drivers/input/touchscreen/focaltech_touch/focaltech_core.c
++++ b/./drivers/input/touchscreen/focaltech_touch/focaltech_core.c
+@@ -846,9 +846,11 @@ static __always_inline int fts_read_touchdata(struct fts_ts_data *data)
+ 	u8 *buf = data->point_buf;
+ 	struct i2c_client *client = data->client;
+ 
++	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO / 2 };
++
+ #if FTS_GESTURE_EN
+ 	if (0 == fts_gesture_readdata(data)) {
+-		FTS_INFO("succuss to get gesture data in irq handler");
++		FTS_INFO("success to get gesture data in irq handler");
+ 		return 1;
+ 	}
+ #endif
+@@ -861,8 +863,6 @@ static __always_inline int fts_read_touchdata(struct fts_ts_data *data)
+ 		fts_read_palm_data();
+ #endif
+ 
+-	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO / 2 };
+-
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+ 
+ 	data->point_num = 0;
+diff --git a/../k0/drivers/input/touchscreen/nt36xxx/nt36xxx.c b/./drivers/input/touchscreen/nt36xxx/nt36xxx.c
+index c4a13c316..48f174282 100644
+--- a/../k0/drivers/input/touchscreen/nt36xxx/nt36xxx.c
++++ b/./drivers/input/touchscreen/nt36xxx/nt36xxx.c
+@@ -1076,6 +1076,8 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
+ 	int32_t i = 0;
+ 	int32_t finger_cnt = 0;
+ 
++	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO / 2 };
++
+ 	pm_qos_update_request(&ts->pm_qos_req, 100);
+ 
+ #if WAKEUP_GESTURE
+@@ -1084,8 +1086,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
+ 	}
+ #endif
+ 
+-	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO / 2 };
+-
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+ 
+ 	mutex_lock(&ts->lock);
+@@ -2099,4 +2099,4 @@ module_init(nvt_driver_init);
+ module_exit(nvt_driver_exit);
+ 
+ MODULE_DESCRIPTION("Novatek Touchscreen Driver");
+-MODULE_LICENSE("GPL");
+\ No newline at end of file
++MODULE_LICENSE("GPL");
+diff --git a/../k0/drivers/kernelsu b/../k0/drivers/kernelsu
+deleted file mode 120000
+index c31df4daf..000000000
+--- a/../k0/drivers/kernelsu
++++ /dev/null
+@@ -1 +0,0 @@
+-/media/pierre/Expension/Android/PocophoneF1/Kernels/Private_NGK_android_kernel_xiaomi_sdm845/KernelSU/kernel
+\ No newline at end of file
+diff --git a/../k0/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c b/./drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
+index 17f22f189..8acf49b3e 100644
+--- a/../k0/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
++++ b/./drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
+@@ -460,9 +460,9 @@ int ipa3_copy_ul_filter_rule_to_ipa(struct ipa_install_fltr_rule_req_msg_v01
+ 			goto failure;
+ 		}
+ 		ipa3_qmi_ctx->q6_ul_filter_rule[i].ip =
+-			rule_req->filter_spec_ex_list[i].ip_type;
++			(enum ipa_ip_type)rule_req->filter_spec_ex_list[i].ip_type;
+ 		ipa3_qmi_ctx->q6_ul_filter_rule[i].action =
+-			rule_req->filter_spec_ex_list[i].filter_action;
++			(enum ipa_flt_action)rule_req->filter_spec_ex_list[i].filter_action;
+ 		if (rule_req->filter_spec_ex_list[i].
+ 			is_routing_table_index_valid == true)
+ 			ipa3_qmi_ctx->q6_ul_filter_rule[i].rt_tbl_idx =
+diff --git a/../k0/drivers/regulator/qpnp-regulator.c b/./drivers/regulator/qpnp-regulator.c
+index bd7066583..87678279e 100644
+--- a/../k0/drivers/regulator/qpnp-regulator.c
++++ b/./drivers/regulator/qpnp-regulator.c
+@@ -2410,7 +2410,7 @@ static void qpnp_regulator_set_point_init(void)
+  * This initialization function should be called in systems in which driver
+  * registration ordering must be controlled precisely.
+  */
+-int __init qpnp_regulator_init(void)
++int qpnp_regulator_init(void)
+ {
+ 	static bool has_registered;
+ 
+@@ -2422,7 +2422,7 @@ int __init qpnp_regulator_init(void)
+ 
+ 	return platform_driver_register(&qpnp_regulator_driver);
+ }
+-EXPORT_SYMBOL(qpnp_regulator_init);
++// EXPORT_SYMBOL(qpnp_regulator_init);
+ 
+ static void __exit qpnp_regulator_exit(void)
+ {
+diff --git a/../k0/drivers/regulator/stub-regulator.c b/./drivers/regulator/stub-regulator.c
+index 3d7465dc2..fdc23de93 100644
+--- a/../k0/drivers/regulator/stub-regulator.c
++++ b/./drivers/regulator/stub-regulator.c
+@@ -282,7 +282,7 @@ static struct platform_driver regulator_stub_driver = {
+ 	},
+ };
+ 
+-int __init regulator_stub_init(void)
++int regulator_stub_init(void)
+ {
+ 	static int registered;
+ 
+@@ -293,7 +293,7 @@ int __init regulator_stub_init(void)
+ 
+ 	return platform_driver_register(&regulator_stub_driver);
+ }
+-EXPORT_SYMBOL(regulator_stub_init);
++// EXPORT_SYMBOL(regulator_stub_init);
+ postcore_initcall(regulator_stub_init);
+ 
+ static void __exit regulator_stub_exit(void)
+diff --git a/../k0/drivers/soc/qcom/icnss.c b/./drivers/soc/qcom/icnss.c
+index b11623583..370b2eee8 100644
+--- a/../k0/drivers/soc/qcom/icnss.c
++++ b/./drivers/soc/qcom/icnss.c
+@@ -3613,7 +3613,7 @@ int icnss_wlan_enable(struct device *dev, struct icnss_wlan_enable_cfg *config,
+ 	if (ret)
+ 		goto out;
+ skip:
+-	ret = wlfw_wlan_mode_send_sync_msg(mode);
++	ret = wlfw_wlan_mode_send_sync_msg((enum wlfw_driver_mode_enum_v01)mode);
+ out:
+ 	if (test_bit(SKIP_QMI, &quirks))
+ 		ret = 0;
+diff --git a/../k0/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c b/./drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+index 45434b2d4..081cd49fb 100644
+--- a/../k0/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
++++ b/./drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+@@ -2802,7 +2802,7 @@ struct ce_ops ce_service_legacy = {
+ };
+ 
+ 
+-struct ce_ops *ce_services_legacy()
++struct ce_ops *ce_services_legacy(void)
+ {
+ 	return &ce_service_legacy;
+ }
+diff --git a/../k0/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c b/./drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+index b2f627490..12d365372 100644
+--- a/../k0/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
++++ b/./drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+@@ -78,7 +78,7 @@
+ 
+ static struct target_if_ctx *g_target_if_ctx;
+ 
+-struct target_if_ctx *target_if_get_ctx()
++struct target_if_ctx *target_if_get_ctx(void)
+ {
+ 	return g_target_if_ctx;
+ }
+diff --git a/../k0/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c b/./drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+index 6aa77c3b4..62bdb253c 100644
+--- a/../k0/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
++++ b/./drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+@@ -289,7 +289,7 @@ struct wlan_cfg_dp_pdev_ctxt {
+  *
+  * Return: wlan_cfg_ctx - Handle to Configuration context
+  */
+-struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach()
++struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach(void)
+ {
+ 	int i = 0;
+ 
+diff --git a/../k0/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h b/./drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+index 0617f63ea..e17c5f13e 100644
+--- a/../k0/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
++++ b/./drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+@@ -1121,7 +1121,7 @@ QDF_STATUS populate_dot11f_rrm_ie(tpAniSirGlobal pMac,
+ 				tpPESession psessionEntry);
+ 
+ void populate_mdie(tpAniSirGlobal pMac, tDot11fIEMobilityDomain * pDot11f,
+-		   uint8_t mdie[]);
++		   uint8_t mdie[SIR_MDIE_SIZE]);
+ 
+ #ifdef WLAN_FEATURE_FILS_SK
+ /**
+diff --git a/../k0/drivers/usb/gadget/function/f_accessory.c b/./drivers/usb/gadget/function/f_accessory.c
+index bf3743882..212f84414 100644
+--- a/../k0/drivers/usb/gadget/function/f_accessory.c
++++ b/./drivers/usb/gadget/function/f_accessory.c
+@@ -80,13 +80,13 @@ struct acc_dev {
+ 	/* online indicates state of function_set_alt & function_unbind
+ 	 * set to 1 when we connect
+ 	 */
+-	int online:1;
++	u_int online:1;
+ 
+ 	/* disconnected indicates state of open & release
+ 	 * Set to 1 when we disconnect.
+ 	 * Not cleared until our file is closed.
+ 	 */
+-	int disconnected:1;
++	u_int disconnected:1;
+ 
+ 	/* strings sent by the host */
+ 	char manufacturer[ACC_STRING_SIZE];
+diff --git a/../k0/drivers/video/fbdev/msm/mdss_mdp.c b/./drivers/video/fbdev/msm/mdss_mdp.c
+index f16bbe442..99710ca2e 100644
+--- a/../k0/drivers/video/fbdev/msm/mdss_mdp.c
++++ b/./drivers/video/fbdev/msm/mdss_mdp.c
+@@ -4648,7 +4648,7 @@ struct mdss_panel_cfg *mdss_panel_intf_type(int intf_val)
+ }
+ EXPORT_SYMBOL(mdss_panel_intf_type);
+ 
+-struct irq_info *mdss_intr_line()
++struct irq_info *mdss_intr_line(void)
+ {
+ 	return mdss_mdp_hw.irq_info;
+ }
+diff --git a/../k0/drivers/video/fbdev/msm/mdss_util.c b/./drivers/video/fbdev/msm/mdss_util.c
+index a5fb8b68f..17645e62f 100644
+--- a/../k0/drivers/video/fbdev/msm/mdss_util.c
++++ b/./drivers/video/fbdev/msm/mdss_util.c
+@@ -252,7 +252,7 @@ struct mdss_util_intf mdss_util = {
+ 	.display_disabled = false
+ };
+ 
+-struct mdss_util_intf *mdss_get_util_intf()
++struct mdss_util_intf *mdss_get_util_intf(void)
+ {
+ 	return &mdss_util;
+ }
+diff --git a/../k0/drivers/video/klapse/klapse.c b/./drivers/video/klapse/klapse.c
+index a4fb5193c..7d3d7fe3b 100644
+--- a/../k0/drivers/video/klapse/klapse.c
++++ b/./drivers/video/klapse/klapse.c
+@@ -256,7 +256,7 @@ static void pulse(unsigned long data)
+ 		restart_timer();
+ }
+ 
+-static void step_current_rgb_to_flow()
++static void step_current_rgb_to_flow(void)
+ {
+ 	if (current_r < flow_r)
+ 		++current_r;
+diff --git a/./fs/.fuse_hidden003cb7fa0000004c b/./fs/.fuse_hidden003cb7fa0000004c
+new file mode 100644
+index 000000000..4c5965958
+--- /dev/null
++++ b/./fs/.fuse_hidden003cb7fa0000004c
+@@ -0,0 +1,20 @@
++--- ../k0/fs/open.c
+++++ ./fs/open.c
++@@ -923,7 +918,7 @@ struct file *dentry_open(const struct path *path, int flags,
++ 				fput(f);
++ 				f = ERR_PTR(error);
++ 			}
++-		} else {
+++		} else {
++ 			put_filp(f);
++ 			f = ERR_PTR(error);
++ 		}
++@@ -1036,7 +1031,7 @@ struct file *filp_open(const char *filename, int flags, umode_t mode)
++ {
++ 	struct filename *name = getname_kernel(filename);
++ 	struct file *file = ERR_CAST(name);
++-
+++
++ 	if (!IS_ERR(name)) {
++ 		file = file_open_name(name, flags, mode);
++ 		putname(name);
+diff --git a/../k0/fs/exec.c b/./fs/exec.c
+index 82c467f0e..96acf901b 100644
+--- a/../k0/fs/exec.c
++++ b/./fs/exec.c
+@@ -1683,9 +1683,6 @@ static int exec_binprm(struct linux_binprm *bprm)
+ 	return ret;
+ }
+ 
+-extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+-			void *envp, int *flags);
+-
+ /*
+  * sys_execve() executes a new program.
+  */
+@@ -1701,8 +1698,6 @@ static int do_execveat_common(int fd, struct filename *filename,
+ 	int retval;
+ 	bool is_su;
+ 
+-	ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+-
+ 	if (IS_ERR(filename))
+ 		return PTR_ERR(filename);
+ 
+diff --git a/../k0/fs/namespace.c b/./fs/namespace.c
+index 8f4ce6c56..8be8767be 100644
+--- a/../k0/fs/namespace.c
++++ b/./fs/namespace.c
+@@ -1704,6 +1704,40 @@ static inline bool may_mandlock(void)
+ }
+ #endif
+ 
++static int can_umount(const struct path *path, int flags)
++{
++	struct mount *mnt = real_mount(path->mnt);
++
++	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
++		return -EINVAL;
++	if (!may_mount())
++		return -EPERM;
++	if (path->dentry != path->mnt->mnt_root)
++		return -EINVAL;
++	if (!check_mnt(mnt))
++		return -EINVAL;
++	if (mnt->mnt.mnt_flags & MNT_LOCKED) /* Check optimistically */
++		return -EINVAL;
++	if (flags & MNT_FORCE && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	return 0;
++}
++
++int path_umount(struct path *path, int flags)
++{
++	struct mount *mnt = real_mount(path->mnt);
++	int ret;
++
++	ret = can_umount(path, flags);
++	if (!ret)
++		ret = do_umount(mnt, flags);
++
++	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
++	dput(path->dentry);
++	mntput_no_expire(mnt);
++	return ret;
++}
++
+ /*
+  * Now umount can handle mount points as well as block devices.
+  * This is important for filesystems which use unnamed block devices.
+diff --git a/../k0/fs/open.c b/./fs/open.c
+index abf3dce6d..f2b82c462 100644
+--- a/../k0/fs/open.c
++++ b/./fs/open.c
+@@ -355,9 +355,6 @@ SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
+ 	return error;
+ }
+ 
+-extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
+-			        int *flags);
+-
+ /*
+  * access() needs to use the real uid/gid, not the effective uid/gid.
+  * We do this by temporarily clearing all FS-related capabilities and
+@@ -373,8 +370,6 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	int res;
+ 	unsigned int lookup_flags = LOOKUP_FOLLOW;
+ 
+-	ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
+-
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+ 		return -EINVAL;
+ 
+diff --git a/../k0/fs/quota/Makefile b/./fs/quota/Makefile
+index c66c37cda..df6ebd030 100644
+--- a/../k0/fs/quota/Makefile
++++ b/./fs/quota/Makefile
+@@ -5,3 +5,5 @@ obj-$(CONFIG_QUOTA_TREE)	+= quota_tree.o
+ obj-$(CONFIG_QUOTACTL)		+= quota.o kqid.o
+ obj-$(CONFIG_QUOTACTL_COMPAT)	+= compat.o
+ obj-$(CONFIG_QUOTA_NETLINK_INTERFACE)	+= netlink.o
++
++CFLAGS_quota_tree.o		+= -Wframe-larger-than=8192
+diff --git a/../k0/fs/read_write.c b/./fs/read_write.c
+index c0198488e..901231269 100644
+--- a/../k0/fs/read_write.c
++++ b/./fs/read_write.c
+@@ -444,14 +444,9 @@ static ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, lo
+ 	return ret;
+ }
+ 
+-extern int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
+-			size_t *count_ptr, loff_t **pos);
+-
+ ssize_t __vfs_read(struct file *file, char __user *buf, size_t count,
+ 		   loff_t *pos)
+ {
+-	ksu_handle_vfs_read(&file, &buf, &count, &pos);
+-
+ 	if (file->f_op->read)
+ 		return file->f_op->read(file, buf, count, pos);
+ 	else if (file->f_op->read_iter)
+diff --git a/../k0/fs/stat.c b/./fs/stat.c
+index f140046ac..068fdbcc9 100644
+--- a/../k0/fs/stat.c
++++ b/./fs/stat.c
+@@ -87,8 +87,6 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
+ }
+ EXPORT_SYMBOL(vfs_fstat);
+ 
+-extern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);
+-
+ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 		int flag)
+ {
+@@ -96,8 +94,6 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 	int error = -EINVAL;
+ 	unsigned int lookup_flags = 0;
+ 
+-	ksu_handle_stat(&dfd, &filename, &flag);
+-
+ 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		      AT_EMPTY_PATH)) != 0)
+ 		goto out;
+diff --git a/../k0/include/linux/regulator/stub-regulator.h b/./include/linux/regulator/stub-regulator.h
+index 1155d82ba..84b94edb0 100644
+--- a/../k0/include/linux/regulator/stub-regulator.h
++++ b/./include/linux/regulator/stub-regulator.h
+@@ -40,11 +40,11 @@ struct stub_regulator_pdata {
+  * registration ordering must be controlled precisely.
+  */
+ 
+-int __init regulator_stub_init(void);
++int regulator_stub_init(void);
+ 
+ #else
+ 
+-static inline int __init regulator_stub_init(void)
++static inline int regulator_stub_init(void)
+ {
+ 	return -ENODEV;
+ }
+diff --git a/../k0/net/ipv4/Makefile b/./net/ipv4/Makefile
+index bc6a6c8b9..a5651c9df 100644
+--- a/../k0/net/ipv4/Makefile
++++ b/./net/ipv4/Makefile
+@@ -61,3 +61,6 @@ obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
+ 
+ obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
+ 		      xfrm4_output.o xfrm4_protocol.o
++
++
++CLANG_inet_hashtables.o += -Wunused-variable
+diff --git a/../k0/security/selinux/hooks.c b/./security/selinux/hooks.c
+index dcb813042..18fa64968 100644
+--- a/../k0/security/selinux/hooks.c
++++ b/./security/selinux/hooks.c
+@@ -2323,7 +2323,6 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
+ 			    const struct task_security_struct *old_tsec,
+ 			    const struct task_security_struct *new_tsec)
+ {
+-        static u32 ksu_sid;
+ 	char *secdata;
+ 	int nnp = (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS);
+ 	int nosuid = !mnt_may_suid(bprm->file->f_path.mnt);
+@@ -2336,14 +2335,11 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
+ 	if (new_tsec->sid == old_tsec->sid)
+ 		return 0; /* No change in credentials */
+ 
+-        if(!ksu_sid){
+-		security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &ksu_sid);
+-	}
+ 	error = security_secid_to_secctx(old_tsec->sid, &secdata, &seclen);
+ 	if (!error) {
+ 		rc = strcmp("u:r:init:s0",secdata);
+ 		security_release_secctx(secdata, seclen);
+-		if(rc == 0 && new_tsec->sid == ksu_sid){
++		if(rc == 0){
+ 			return 0;
+ 		}
+ 	}

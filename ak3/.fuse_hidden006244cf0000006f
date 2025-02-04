@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=.::NGKxUN::4.5.0::.
+kernel.string=NoGravityKernel-4.5.0
 do.devicecheck=1
 do.modules=0
 do.spectrum=1

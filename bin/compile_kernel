@@ -20,5 +20,8 @@ mkdir $DIR/out
 # compile kernel
 sh compile.sh
 
+# change owner
+chown -rf 1000:1000 $DIR/out
+
 # Packaging Image with Custom Anykernel3
 zip_package
