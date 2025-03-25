@@ -7,7 +7,7 @@ BUILD_USER="G14nd1"
 BUILD_HOST="CachyOS"
 KSU="y"
 KSUNEXT="y"
-SUSFS="n"
+SUSFS="y"
 
 
 # checking requirement
@@ -29,17 +29,23 @@ rm -rf ngk && mkdir ngk && cp -rf orig/* ngk/
 
 # patching with condition for KSU or KSU-Next
 if [[ "$KSU" =~ [yY] && "$KSUNEXT" =~ [nN] ]]; then
+    echo "Saya di KSU"
     patch -lfp1 -d ./ngk < ./patch/KERNEL_KSU.patch
     sed -i 's/CONFIG_KSU=[Nn]/CONFIG_KSU=y/g' ngk/arch/arm64/configs/nogravity_defconfig
     sed -i 's/CONFIG_KPROBES=[Nn]/CONFIG_KPROBES=y/g' ngk/arch/arm64/configs/nogravity_defconfig
 elif [[ "$KSU" =~ [yY] && "$KSUNEXT" =~ [yY] ]]; then
+    echo "Saya di KNext"
     patch -lfp1 -d ./ngk < ./patch/KERNEL_NOKSU.patch
+    echo "Saya sedang patching KNext"
     patch -lfp1 -d ./ngk < ./patch/KERNEL_NOKSU_KNEXT.patch
+    # removing KSU symlink
+    rm -f ./ngk/drivers/kernelsu && sed -i '13a\ln -s /data/KernelSU-Next/kernel /data/drivers/kernelsu' ngk/compile.sh
 
     if [[ "$CONFIG_LOCALVERSION" == "-NoGravity"* ]]; then
         sed -i '163c\res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}-KNext"' ngk/scripts/setlocalversion
     fi
 else
+    echo "saya di Non Root"
     patch -lfp1 -d ./ngk < ./patch/KERNEL_NOKSU.patch
 fi
 
@@ -61,16 +67,16 @@ if [[ "$KSUNEXT" =~ [yY] && "$SUSFS" =~ [yY] ]]; then
 fi
 
 # Setting vbmeta.digest
-sed -i "572 c\CONFIG_CMDLINE=\"androidboot.vbmeta.digest=$VBMETA_DIGEST\"" ngk/arch/arm64/configs/nogravity_defconfig
+#sed -i "572 c\CONFIG_CMDLINE=\"androidboot.vbmeta.digest=$VBMETA_DIGEST\"" ngk/arch/arm64/configs/nogravity_defconfig
 
 
 docker run \
-  --name 'ngk_build' \
-  --rm \
-  -v "./ngk:/data" \
-  -v "./ak3:/tmp/ak3" \
-  -v "./out:/tmp/out" \
-  -v "./ext:/tmp/ext" \
-  -v "./bin/compile_kernel:/bin/compile_kernel" \
-  -v "./bin/zip_package:/bin/zip_package" \
-  -i ubuntu:build-20 sh -c "compile_kernel"
+ --name 'ngk_build' \
+ --rm \
+ -v "./ngk:/data" \
+ -v "./ak3:/tmp/ak3" \
+ -v "./out:/tmp/out" \
+ -v "./ext:/tmp/ext" \
+ -v "./bin/compile_kernel:/bin/compile_kernel" \
+ -v "./bin/zip_package:/bin/zip_package" \
+ -i ubuntu:build-20 sh -c "compile_kernel"

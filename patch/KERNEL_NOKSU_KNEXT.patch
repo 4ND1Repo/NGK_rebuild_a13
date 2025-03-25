@@ -1,44 +1,44 @@
-diff --git a/../k1/arch/arm64/configs/nogravity_defconfig b/./arch/arm64/configs/nogravity_defconfig
-index 6822964a5..06b1fc9c7 100644
---- a/../k1/arch/arm64/configs/nogravity_defconfig
-+++ b/./arch/arm64/configs/nogravity_defconfig
+diff --git a/./a/arch/arm64/configs/nogravity_defconfig ./arch/arm64/configs/nogravity_defconfig
+index 41b1ba1..8d6ebc1 100644
+--- a/./a/arch/arm64/configs/nogravity_defconfig
++++ ./arch/arm64/configs/nogravity_defconfig
 @@ -5290,3 +5290,5 @@ CONFIG_MACH_XIAOMI_E10=y
  # CONFIG_MACH_XIAOMI_E8 is not set
  # CONFIG_MACH_XIAOMI_E5 is not set
  CONFIG_BERYLLIUM=y
 +CONFIG_KSU=y
 +CONFIG_KPROBES=y
-diff --git a/../k1/compile.sh b/./compile.sh
-index f581a799e..277f224b4 100755
---- a/../k1/compile.sh
-+++ b/./compile.sh
+diff --git a/./a/compile.sh ./compile.sh
+index f581a79..277f224 100755
+--- a/./a/compile.sh
++++ ./compile.sh
 @@ -8,6 +8,10 @@ yellow='\033[0;33m'
  red='\033[0;31m'
  nocol='\033[0m'
-
+ 
 +# Kernel SU Next
 +curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
 +if [ -f "/data/KernelSU-Next/kernel/kernel" ]; then rm -f /data/KernelSU-Next/kernel/kernel; fi
 +
  # Cleanup
  rm -rf out/outputs/*
-
-diff --git a/../k1/fs/internal.h b/./fs/internal.h
-index 3e58863de..380bae4c5 100644
---- a/../k1/fs/internal.h
-+++ b/./fs/internal.h
+ 
+diff --git a/./a/fs/internal.h ./fs/internal.h
+index 3e58863..380bae4 100644
+--- a/./a/fs/internal.h
++++ ./fs/internal.h
 @@ -68,6 +68,7 @@ extern int finish_automount(struct vfsmount *, struct path *);
  extern int sb_prepare_remount_readonly(struct super_block *);
-
+ 
  extern void __init mnt_init(void);
 +int path_umount(struct path *path, int flags);
-
+ 
  extern int __mnt_want_write(struct vfsmount *);
  extern int __mnt_want_write_file(struct file *);
-diff --git a/../k1/include/linux/cred.h b/./include/linux/cred.h
-index 09debf2e0..131e5791f 100644
---- a/../k1/include/linux/cred.h
-+++ b/./include/linux/cred.h
+diff --git a/./a/include/linux/cred.h ./include/linux/cred.h
+index 09debf2..131e579 100644
+--- a/./a/include/linux/cred.h
++++ ./include/linux/cred.h
 @@ -263,6 +263,17 @@ static inline const struct cred *get_cred(const struct cred *cred)
   * on task_struct are attached by const pointers to prevent accidental
   * alteration of otherwise immutable credential sets.
@@ -57,16 +57,16 @@ index 09debf2e0..131e5791f 100644
  static inline void put_cred(const struct cred *_cred)
  {
  	struct cred *cred = (struct cred *) _cred;
-diff --git a/../k1/kernel/cred.c b/./kernel/cred.c
-index d63a2d861..ad24a4cb2 100644
---- a/../k1/kernel/cred.c
-+++ b/./kernel/cred.c
+diff --git a/./a/kernel/cred.c ./kernel/cred.c
+index d63a2d8..ad24a4c 100644
+--- a/./a/kernel/cred.c
++++ ./kernel/cred.c
 @@ -196,7 +196,7 @@ const struct cred *get_task_cred(struct task_struct *task)
  	do {
  		cred = __task_cred((task));
  		BUG_ON(!cred);
 -	} while (!atomic_inc_not_zero(&((struct cred *)cred)->usage));
 +	} while (!get_cred_rcu(cred));
-
+ 
  	rcu_read_unlock();
  	return cred;
